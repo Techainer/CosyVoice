@@ -24,12 +24,12 @@ import torchaudio
 import os
 import re
 import inflect
-
 from loguru import logger
 from vinorm import TTSnorm as Vinormalizer
 from tn.chinese.normalizer import Normalizer as ZhNormalizer
 use_ttsfrd = False
 from cosyvoice.utils.frontend_utils import contains_chinese, replace_blank, replace_corner_mark, remove_bracket, spell_out_number, split_paragraph
+
 
 class CosyVoiceFrontEnd:
 
@@ -108,7 +108,7 @@ class CosyVoiceFrontEnd:
 
     def text_normalize(self, text, split=True, text_frontend=True):
         if isinstance(text, Generator):
-            logging.info('get tts_text generator, will skip text_normalize!')
+            logger.info('get tts_text generator, will skip text_normalize!')
             return [text]
         if text_frontend is False:
             return [text] if split is True else text

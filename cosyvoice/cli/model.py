@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import os
+from typing import Generator
 from loguru import logger
 import torch
 import numpy as np
@@ -21,7 +22,6 @@ from torch.nn import functional as F
 from contextlib import nullcontext
 import uuid
 from cosyvoice.utils.common import fade_in_out, fade_in_out_audio
-from cosyvoice.utils.file_utils import convert_onnx_to_trt
 
 class CosyVoiceModel:
 
@@ -74,6 +74,9 @@ class CosyVoiceModel:
         hift_state_dict = {k.replace('generator.', ''): v for k, v in torch.load(hift_model, map_location=self.device).items()}
         self.hift.load_state_dict(hift_state_dict, strict=True)
         self.hift.to(self.device).eval()
+        if self.fp16 is True:
+            self.llm.half()
+            self.flow.half()
 
     def load_jit(self, llm_text_encoder_model, llm_llm_model, flow_encoder_model):
         llm_text_encoder = torch.jit.load(llm_text_encoder_model, map_location=self.device)
@@ -83,7 +86,7 @@ class CosyVoiceModel:
         flow_encoder = torch.jit.load(flow_encoder_model, map_location=self.device)
         self.flow.encoder = flow_encoder
 
-    def load_trt(self, flow_decoder_estimator_model, flow_decoder_onnx_model, fp16):
+    def load_trt(self, flow_decoder_estimator_model):
         assert torch.cuda.is_available(), 'tensorrt only supports gpu!'
         if not os.path.exists(flow_decoder_estimator_model):
             convert_onnx_to_trt(flow_decoder_estimator_model, flow_decoder_onnx_model, fp16)

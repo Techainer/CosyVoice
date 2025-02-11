@@ -17,7 +17,7 @@ from loguru import logger as logging
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append('{}/third_party/Matcha-TTS'.format(ROOT_DIR))
 
-from cosyvoice.cli.cosyvoice import CosyVoice
+from cosyvoice.cli.cosyvoice import CosyVoice, CosyVoice2
 from cosyvoice.utils.file_utils import load_wav
 from cosyvoice.utils.common import set_all_random_seed, fade_in_out_audio
 from tools.vad import get_speech
@@ -154,10 +154,13 @@ def generate_audio(
     if isinstance(prompt_wav, tuple):
         prompt_wav = pcm2float(prompt_wav[1])
         prompt_wav = prompt_wav[np.newaxis, :]
-
+    
+    prompt_wav = torch.from_numpy(prompt_wav)
+    instruct_text = ''
+    
     # Natural Language Control Mode
     if mode_checkbox_group in ['Natural language control']:
-        if cosyvoice.frontend.instruct is False:
+        if cosyvoice.instruct is False:
             gr.Warning('You are using natural language control mode, the {} model does not support this mode, please use the iic/CosyVoice-300M-Instruct model.'.format(args.model_dir))
             yield (target_sr, default_data)
         if instruct_text == '':
@@ -168,7 +171,7 @@ def generate_audio(
 
     # Cross-lingual Mode
     if mode_checkbox_group in ['Cross-lingual replication']:
-        if cosyvoice.frontend.instruct is True:
+        if cosyvoice.instruct is True:
             gr.Warning('You are using cross-lingual replication mode, the {} model does not support this mode, please use the iic/CosyVoice-300M model.'.format(args.model_dir))
             yield (target_sr, default_data)
         if instruct_text != '':
@@ -199,7 +202,7 @@ def generate_audio(
 
     # Cross-lingual Mode
     if mode_checkbox_group in ['Cross-lingual replication']:
-        if cosyvoice.frontend.instruct is True:
+        if cosyvoice.instruct is True:
             gr.Warning('You are using cross-lingual replication mode, the {} model does not support this mode, please use the iic/CosyVoice-300M model.'.format(args.model_dir))
             yield (target_sr, default_data)
         if prompt_wav is None:
@@ -290,13 +293,13 @@ def main():
                             prompt_wav_record = gr.Audio(sources='microphone', type='filepath', label='Record prompt audio file')
                     with gr.Row():
                         with gr.Column():
-                            min_speech_dur = gr.Number(value=3, minimum=-1, maximum=30, label="Minimum speech duration", visible=False)
+                            min_speech_dur = gr.Number(value=3, minimum=-1, maximum=30, label="Minimum speech duration", visible=True)
                         with gr.Column():
-                            max_speech_dur = gr.Number(value=5, minimum=-1, maximum=30, label="Maximum speech duration", visible=False)
+                            max_speech_dur = gr.Number(value=5, minimum=-1, maximum=30, label="Maximum speech duration", visible=True)
                         
-                        enable_vad = gr.Checkbox(value=True, label="Enable VAD", visible=False)
+                        enable_vad = gr.Checkbox(value=True, label="Enable VAD", visible=True)
                     
-                    output_prompt_audio = gr.Audio(label='Processed prompt audio', type='numpy', visible=False)
+                    output_prompt_audio = gr.Audio(label='Processed prompt audio', type='numpy', visible=True)
                     # trigger vad change upload
                     enable_vad.change(
                         fn=lambda a,b,c,d: (prompt_sr, preprocess_prompt_audio(a, b, c, d).numpy().flatten()),
@@ -448,7 +451,7 @@ if __name__ == '__main__':
     sft_spk = cosyvoice.list_available_spks()
     if len(sft_spk) == 0:
         sft_spk = ['']
-    prompt_sr = 16000
+    prompt_sr, target_sr = 16000, 22050
     default_data = np.zeros(cosyvoice.sample_rate)
     main()
 

@@ -20,7 +20,7 @@ from torch.nn.utils.rnn import pad_sequence, unpad_sequence
 from cosyvoice.utils.common import IGNORE_ID
 from cosyvoice.transformer.label_smoothing_loss import LabelSmoothingLoss
 from cosyvoice.utils.common import th_accuracy
-from cosyvoice.utils.file_utils import logging
+from loguru import logger
 
 
 class TransformerLM(torch.nn.Module):
@@ -369,26 +369,26 @@ class Qwen2LM(TransformerLM):
             while prompt_speech_token_emb.size(1) != 0:
                 if text_cache.size(1) >= self.mix_ratio[0]:
                     lm_input_text, lm_input_speech = text_cache[:, :self.mix_ratio[0]], prompt_speech_token_emb[:, :self.mix_ratio[1]]
-                    logging.info('append {} text token {} speech token'.format(lm_input_text.size(1), lm_input_speech.size(1)))
+                    logger.info('append {} text token {} speech token'.format(lm_input_text.size(1), lm_input_speech.size(1)))
                     lm_input = torch.concat([lm_input, lm_input_text, lm_input_speech], dim=1)
                     text_cache, prompt_speech_token_emb = text_cache[:, self.mix_ratio[0]:], prompt_speech_token_emb[:, self.mix_ratio[1]:]
                 else:
-                    logging.info('not enough text token to decode, wait for more')
+                    logger.info('not enough text token to decode, wait for more')
                     break
             # no prompt_speech_token_emb remain, can decode some speech token
             if prompt_speech_token_emb.size(1) == 0:
                 if (len(out_tokens) != 0 and out_tokens[-1] == self.speech_token_size + 2) or (len(out_tokens) == 0 and lm_input.size(1) == 1):
-                    logging.info('get fill token, need to append more text token')
+                    logger.info('get fill token, need to append more text token')
                     if text_cache.size(1) >= self.mix_ratio[0]:
                         lm_input_text = text_cache[:, :self.mix_ratio[0]]
-                        logging.info('append {} text token'.format(lm_input_text.size(1)))
+                        logger.info('append {} text token'.format(lm_input_text.size(1)))
                         if len(out_tokens) != 0 and out_tokens[-1] == self.speech_token_size + 2:
                             lm_input = lm_input_text
                         else:
                             lm_input = torch.concat([lm_input, lm_input_text], dim=1)
                         text_cache = text_cache[:, self.mix_ratio[0]:]
                     else:
-                        logging.info('not enough text token to decode, wait for more')
+                        logger.info('not enough text token to decode, wait for more')
                         continue
                 while True:
                     seq_len = lm_input.shape[1] if cache is None else lm_input.shape[1] + cache[0][0].size(2)
@@ -403,7 +403,7 @@ class Qwen2LM(TransformerLM):
                         top_ids = self.sampling_ids(logp.squeeze(dim=0), out_tokens, sampling, ignore_eos=True).item()
                     if top_ids == self.speech_token_size + 2:
                         next_fill_index = len(out_tokens) + self.mix_ratio[1] + 1
-                        logging.info('fill_token index {} next fill_token index {}'.format(len(out_tokens), next_fill_index))
+                        logger.info('fill_token index {} next fill_token index {}'.format(len(out_tokens), next_fill_index))
                     out_tokens.append(top_ids)
                     if top_ids >= self.speech_token_size:
                         if top_ids == self.speech_token_size + 2:
@@ -415,7 +415,7 @@ class Qwen2LM(TransformerLM):
 
         # 3. final decode
         lm_input = torch.concat([lm_input, text_cache, task_id_emb], dim=1)
-        logging.info('no more text token, decode until met eos')
+        logger.info('no more text token, decode until met eos')
         while True:
             seq_len = lm_input.shape[1] if cache is None else lm_input.shape[1] + cache[0][0].size(2)
             y_pred, cache = self.llm.forward_one_step(lm_input,
