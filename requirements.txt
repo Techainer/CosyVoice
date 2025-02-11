@@ -33,3 +33,4 @@ fastapi-cli==0.0.4
 WeTextProcessing==1.0.3
 loguru==0.7.2
 natsort==8.4.0
+hugggingface_hub==0.25.2

@@ -192,13 +192,23 @@ def generate_audio(
     elif mode_checkbox_group == 'Cross-lingual replication':
         logging.info('Get cross-lingual inference request')
         set_all_random_seed(seed)
+        all_audio = []
         for i in cosyvoice.inference_cross_lingual(tts_text, prompt_wav, stream=stream, speed=speed):
-            yield (target_sr, i['tts_speech'].numpy().flatten())
+            chunk = i['tts_speech'].numpy().flatten()
+            yield (target_sr, chunk)
+            all_audio.append(chunk)
+        if not stream:
+            yield (target_sr, np.concatenate(all_audio, axis=0))
     else:
         logging.info('Get instruct inference request')
         set_all_random_seed(seed)
+        all_audio = []
         for i in cosyvoice.inference_instruct(tts_text, prompt_wav, prompt_text, stream=stream, speed=speed):
-            yield (target_sr, i['tts_speech'].numpy().flatten())
+            chunk = i['tts_speech'].numpy().flatten()
+            yield (target_sr, chunk)
+            all_audio.append(chunk)
+        if not stream:
+            yield (target_sr, np.concatenate(all_audio, axis=0))
 
 def generate_audio_vc(
     source_audio: Union[str, np.ndarray],
@@ -215,8 +225,13 @@ def generate_audio_vc(
     if isinstance(target_audio, tuple):
         target_audio = pcm2float(target_audio[1])
         target_audio = target_audio[np.newaxis, :]
+    all_audio = []
     for i in cosyvoice.inference_vc(source_audio, target_audio):
-        yield (target_sr, i['tts_speech'].numpy().flatten())
+        chunk = i['tts_speech'].numpy().flatten()
+        yield (target_sr, chunk)
+        all_audio.append(chunk)
+    if not stream:
+        yield (target_sr, np.concatenate(all_audio, axis=0))
 
 def main():
     with gr.Blocks() as demo:
@@ -235,12 +250,13 @@ def main():
                             prompt_wav_record = gr.Audio(sources='microphone', type='filepath', label='Record prompt audio file')
                     with gr.Row():
                         with gr.Column():
-                            min_speech_dur = gr.Number(value=3, minimum=-1, maximum=30, label="Minimum speech duration")
+                            min_speech_dur = gr.Number(value=3, minimum=-1, maximum=30, label="Minimum speech duration", visible=False)
                         with gr.Column():
-                            max_speech_dur = gr.Number(value=5, minimum=-1, maximum=30, label="Maximum speech duration")
-                        enable_vad = gr.Checkbox(value=True, label="Enable VAD")
+                            max_speech_dur = gr.Number(value=5, minimum=-1, maximum=30, label="Maximum speech duration", visible=False)
+                        
+                        enable_vad = gr.Checkbox(value=True, label="Enable VAD", visible=False)
                     
-                    output_prompt_audio = gr.Audio(label='Processed prompt audio', type='numpy')
+                    output_prompt_audio = gr.Audio(label='Processed prompt audio', type='numpy', visible=False)
                     # trigger vad change upload
                     enable_vad.change(
                         fn=lambda a,b,c,d: (prompt_sr, preprocess_prompt_audio(a, b, c, d).numpy().flatten()),
@@ -269,11 +285,12 @@ def main():
                         inputs=[prompt_wav_record, enable_vad, min_speech_dur, max_speech_dur],
                         outputs=output_prompt_audio
                     )
-                    prompt_text = gr.Textbox(label="Reference/Prompt text", lines=5)
+                    prompt_text = gr.Textbox(label="Reference/Prompt text", lines=5, visible=False)
                     mode_checkbox_group = gr.Radio(
                         choices=inference_mode_list,
                         label='Mode',
-                        value=inference_mode_list[0]
+                        value=inference_mode_list[0],
+                        visible=False
                     )
                     stream = gr.Radio(
                         label='Enable streaming inference',
@@ -284,10 +301,10 @@ def main():
                     speed = gr.Slider(label="Speed", value=1, minimum=0.5, maximum=2.0, step=0.1)
                     seed_button = gr.Button(value="\U0001F3B2", visible=False)
                     seed = gr.Number(value=0, label="Random inference seed", visible=False)
+                    generate_btn = gr.Button("Generate", variant="primary")
 
                 with gr.Column():
                     output_audio = gr.Audio(label='Generated audio', streaming=False)
-                    generate_btn = gr.Button("Generate", variant="primary")
                     gr.Examples(examples, inputs=[tts_text, mode_checkbox_group, prompt_text, prompt_wav_upload])
 
                 seed_button.click(fn=generate_seed, outputs=seed)
@@ -315,7 +332,7 @@ def main():
                 with gr.Column():
                     max_speech_dur = gr.Number(value=5, minimum=-1, maximum=30, label="Maximum speech duration")
             with gr.Row():
-                output_audio = gr.Audio(label='Generated audio', streaming=True)
+                output_audio = gr.Audio(label='Generated audio', streaming=False)
             with gr.Row():
                 generate_btn = gr.Button("Generate", variant="primary")
                 ref_wav_upload.upload(
