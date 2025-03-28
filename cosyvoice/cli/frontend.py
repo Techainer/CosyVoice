@@ -169,7 +169,7 @@ class CosyVoiceFrontEnd:
                     .replace(")", "")
                     .replace("**", "")
                     .replace(" = ", " bằng ")
-                    # .replace("/", "phần")
+                    .replace("Vietnamobile", "Việt nam mobile")
                     .replace("#", "")
                     .replace('\\', '')
                     .replace('```', '')
@@ -195,9 +195,18 @@ class CosyVoiceFrontEnd:
 
             if not split:
                 return text
-            texts = list(split_paragraph(text, partial(self.tokenizer.encode, allowed_special=self.allowed_special), "en", token_max_n=30,
-                                            token_min_n=10, merge_len=5, comma_split=False))
-        logger.info(f"Text normalized: {texts}")
+
+            logger.info(f"text: {text}")
+            texts = list(split_paragraph(
+                text=text,
+                tokenize=partial(self.tokenizer.encode, allowed_special=self.allowed_special),
+                lang="en",
+                token_max_n=40,
+                token_min_n=10,
+                merge_len=5,
+                comma_split=False
+            ))
+        logger.info(f"Text normalized: {' '.join(texts)}")
         return texts
 
     def frontend_sft(self, tts_text, spk_id):

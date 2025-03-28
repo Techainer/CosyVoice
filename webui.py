@@ -87,7 +87,7 @@ examples = [
     ]
 ]
 stream_mode_list = [('No', False), ('Yes', True)]
-max_val = 0.8
+max_val = 0.9
 
 def generate_seed():
     seed = random.randint(1, 100000000)
@@ -106,6 +106,7 @@ def preprocess_prompt_audio(
         speech = load_wav(speech, prompt_sr)
     elif isinstance(speech, np.ndarray):
         speech = torch.from_numpy(speech)
+
     if speech.abs().max() > max_val:
         speech = speech / speech.abs().max() * max_val
     if vad:
@@ -172,14 +173,14 @@ def generate_audio(
     # Cross-lingual Mode
     if mode_checkbox_group in ['Cross-lingual replication']:
         if cosyvoice.instruct is True:
-            gr.Warning('You are using cross-lingual replication mode, the {} model does not support this mode, please use the iic/CosyVoice-300M model.'.format(args.model_dir))
+            # gr.Warning('You are using cross-lingual replication mode, the {} model does not support this mode, please use the iic/CosyVoice-300M model.'.format(args.model_dir))
             yield (target_sr, default_data)
-        if instruct_text != '':
-            gr.Info('You are using cross-lingual replication mode, the instruct text will be ignored.')
+        # if instruct_text != '':
+            # gr.Info('You are using cross-lingual replication mode, the instruct text will be ignored.')
         if prompt_wav is None:
-            gr.Warning('You are using cross-lingual replication mode, please provide the prompt audio.')
+            # gr.Warning('You are using cross-lingual replication mode, please provide the prompt audio.')
             yield (target_sr, default_data)
-        gr.Info('You are using cross-lingual replication mode, please ensure that the synthesized text and the prompt text are in different languages.')
+        # gr.Info('You are using cross-lingual replication mode, please ensure that the synthesized text and the prompt text are in different languages.')
 
     # 3-second Fast Replication Mode
     if mode_checkbox_group in ['3-second fast replication', 'Cross-lingual replication']:
@@ -203,10 +204,10 @@ def generate_audio(
     # Cross-lingual Mode
     if mode_checkbox_group in ['Cross-lingual replication']:
         if cosyvoice.instruct is True:
-            gr.Warning('You are using cross-lingual replication mode, the {} model does not support this mode, please use the iic/CosyVoice-300M model.'.format(args.model_dir))
+            # gr.Warning('You are using cross-lingual replication mode, the {} model does not support this mode, please use the iic/CosyVoice-300M model.'.format(args.model_dir))
             yield (target_sr, default_data)
         if prompt_wav is None:
-            gr.Warning('You are using cross-lingual replication mode, please provide the prompt audio.')
+            # gr.Warning('You are using cross-lingual replication mode, please provide the prompt audio.')
             yield (target_sr, default_data)
 
     # 3-second Fast Replication Mode
@@ -278,7 +279,7 @@ def generate_audio_vc(
 
 def main():
     with gr.Blocks() as demo:
-        gr.Markdown("# Text2Speech")
+        gr.Markdown("# Text to Speech")
         with gr.Tab('TTS & Voice clone'):
             with gr.Row():
                 with gr.Column():
@@ -347,7 +348,7 @@ def main():
                     generate_btn = gr.Button("Generate", variant="primary")
 
                 with gr.Column():
-                    output_audio = gr.Audio(label='Generated audio', streaming=False)
+                    output_audio = gr.Audio(label='Generated audio', streaming=stream)
                     gr.Examples(examples, inputs=[tts_text, mode_checkbox_group, prompt_text, prompt_wav_upload])
 
                 seed_button.click(fn=generate_seed, outputs=seed)
@@ -361,41 +362,41 @@ def main():
                     ],
                     outputs=output_audio
                 )
-        with gr.Tab('Voice conversion'):
-            with gr.Row():
-                with gr.Column():
-                    ref_wav_upload = gr.Audio(sources='upload', type='filepath', label='Reference audio')
-                    target_wav_upload = gr.Audio(sources='upload', type='filepath', label='Target audio')
-                with gr.Column():
-                    output_ref_audio = gr.Audio(label='Pre-processed reference audio', sources='upload', type='numpy', editable=False)
-                    output_target_audio = gr.Audio(label='Pre-processed target audio', sources='upload', type='numpy', editable=False)
-            with gr.Row():
-                with gr.Column():
-                    min_speech_dur = gr.Number(value=3, minimum=-1, maximum=30, label="Minimum speech duration")
-                with gr.Column():
-                    max_speech_dur = gr.Number(value=5, minimum=-1, maximum=30, label="Maximum speech duration")
-            with gr.Row():
-                output_audio = gr.Audio(label='Generated audio', streaming=False)
-            with gr.Row():
-                generate_btn = gr.Button("Generate", variant="primary")
-                ref_wav_upload.upload(
-                    fn=lambda a: (prompt_sr, preprocess_prompt_audio(a, False, -1, -1).numpy().flatten()),
-                    inputs=[ref_wav_upload],
-                    outputs=[output_ref_audio]
-                )
-                target_wav_upload.upload(
-                    fn=lambda a,b,c,d: (prompt_sr, preprocess_prompt_audio(a, b, c, d).numpy().flatten()),
-                    inputs=[target_wav_upload, enable_vad, min_speech_dur, max_speech_dur],
-                    outputs=[output_target_audio]
-                )
-                generate_btn.click(
-                    fn=generate_audio_vc,
-                    inputs=[
-                        output_ref_audio,
-                        output_target_audio
-                    ],
-                    outputs=output_audio
-                )
+        # with gr.Tab('Voice conversion'):
+        #     with gr.Row():
+        #         with gr.Column():
+        #             ref_wav_upload = gr.Audio(sources='upload', type='filepath', label='Reference audio')
+        #             target_wav_upload = gr.Audio(sources='upload', type='filepath', label='Target audio')
+        #         with gr.Column():
+        #             output_ref_audio = gr.Audio(label='Pre-processed reference audio', sources='upload', type='numpy', editable=False)
+        #             output_target_audio = gr.Audio(label='Pre-processed target audio', sources='upload', type='numpy', editable=False)
+        #     with gr.Row():
+        #         with gr.Column():
+        #             min_speech_dur = gr.Number(value=3, minimum=-1, maximum=30, label="Minimum speech duration")
+        #         with gr.Column():
+        #             max_speech_dur = gr.Number(value=5, minimum=-1, maximum=30, label="Maximum speech duration")
+        #     with gr.Row():
+        #         output_audio = gr.Audio(label='Generated audio', streaming=False)
+        #     with gr.Row():
+        #         generate_btn = gr.Button("Generate", variant="primary")
+        #         ref_wav_upload.upload(
+        #             fn=lambda a: (prompt_sr, preprocess_prompt_audio(a, False, -1, -1).numpy().flatten()),
+        #             inputs=[ref_wav_upload],
+        #             outputs=[output_ref_audio]
+        #         )
+        #         target_wav_upload.upload(
+        #             fn=lambda a,b,c,d: (prompt_sr, preprocess_prompt_audio(a, b, c, d).numpy().flatten()),
+        #             inputs=[target_wav_upload, enable_vad, min_speech_dur, max_speech_dur],
+        #             outputs=[output_target_audio]
+        #         )
+        #         generate_btn.click(
+        #             fn=generate_audio_vc,
+        #             inputs=[
+        #                 output_ref_audio,
+        #                 output_target_audio
+        #             ],
+        #             outputs=output_audio
+        #         )
                 
 #     demo.title = 'Text2Speech: A fast TTS architecture with conditional flow matching'
 #         gr.Markdown("### 代码库 [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) \
@@ -433,7 +434,7 @@ def main():
 #         mode_checkbox_group.change(fn=change_instruction, inputs=[mode_checkbox_group], outputs=[instruction_text])
         
     demo.queue(max_size=4, default_concurrency_limit=2)
-    demo.launch(server_name='0.0.0.0', server_port=args.port)
+    demo.launch(server_name='0.0.0.0', server_port=args.port, share=True)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
