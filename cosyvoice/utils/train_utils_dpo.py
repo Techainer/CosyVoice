@@ -44,7 +44,7 @@ def init_distributed(args):
                  ', rank {}, world_size {}'.format(rank, world_size))
     if args.train_engine == 'torch_ddp':
         torch.cuda.set_device(local_rank)
-        # dist.init_process_group(args.dist_backend)
+        dist.init_process_group(args.dist_backend)
     else:
         deepspeed.init_distributed(dist_backend=args.dist_backend)
     return world_size, local_rank, rank
@@ -97,7 +97,7 @@ def wrap_cuda_model(args, model):
     if args.train_engine == "torch_ddp":  # native pytorch ddp
         assert (torch.cuda.is_available())
         model.cuda()
-        # model = torch.nn.parallel.DistributedDataParallel(model, find_unused_parameters=True)
+        model = torch.nn.parallel.DistributedDataParallel(model, find_unused_parameters=True)
     else:
         if int(os.environ.get('RANK', 0)) == 0:
             logging.info("Estimating model states memory needs (zero2)...")
@@ -235,7 +235,7 @@ def cosyvoice_join(group_join, info_dict):
         return False
 
 
-def batch_forward(model, batch, scaler, info_dict):
+def batch_forward(model, batch, scaler, info_dict, ref_model=None, dpo_loss=None):
     device = int(os.environ.get('LOCAL_RANK', 0))
 
     dtype = info_dict["dtype"]
@@ -253,6 +253,25 @@ def batch_forward(model, batch, scaler, info_dict):
 
     with autocast:
         info_dict['loss_dict'] = model(batch, device)
+        if ref_model and dpo_loss:
+            chosen_logps = info_dict['loss_dict']["chosen_logps"]
+            rejected_logps = info_dict['loss_dict']["rejected_logps"]
+            sft_loss = info_dict['loss_dict']['loss']
+            with torch.no_grad():
+                ref_model = ref_model.to(device)
+                ref_loss_dict = ref_model(batch, device)
+            reference_chosen_logps = ref_loss_dict["chosen_logps"]
+            reference_rejected_logps = ref_loss_dict["rejected_logps"]
+            preference_loss, chosen_reward, reject_reward = dpo_loss(
+                chosen_logps, rejected_logps, reference_chosen_logps, reference_rejected_logps
+            )
+            dpo_acc = (chosen_reward > reject_reward).float().mean()
+            info_dict['loss_dict']["loss"] = preference_loss + sft_loss
+            info_dict['loss_dict']["sft_loss"] = sft_loss
+            info_dict['loss_dict']["dpo_loss"] = preference_loss
+            info_dict['loss_dict']["dpo_acc"] = dpo_acc
+            info_dict['loss_dict']["chosen_reward"] = chosen_reward.mean()
+            info_dict['loss_dict']["reject_reward"] = reject_reward.mean()
     return info_dict
 
 
@@ -286,15 +305,11 @@ def update_parameter_and_lr(model, optimizer, scheduler, scaler, info_dict):
             # optimizer.step().
             if torch.isfinite(grad_norm):
                 scaler.step(optimizer)
-            else:
-                logging.warning('get infinite grad_norm, check your code/data if it appears frequently')
             scaler.update()
         else:
             grad_norm = clip_grad_norm_(model.parameters(), info_dict['grad_clip'])
             if torch.isfinite(grad_norm):
                 optimizer.step()
-            else:
-                logging.warning('get infinite grad_norm, check your code/data if it appears frequently')
         optimizer.zero_grad()
         scheduler.step()
     info_dict["lr"] = optimizer.param_groups[0]['lr']
@@ -321,7 +336,7 @@ def log_per_step(writer, info_dict):
 
     # TRAIN & CV, Shell log (stdout)
     if (info_dict['batch_idx'] + 1) % info_dict['log_interval'] == 0:
-        log_str = '[{}] Epoch {} Batch {} '.format(tag, epoch, batch_idx + 1)
+        log_str = '{} Batch {}/{} '.format(tag, epoch, batch_idx + 1)
         for name, value in loss_dict.items():
             log_str += '{} {:.6f} '.format(name, value)
         if tag == "TRAIN":
@@ -340,7 +355,7 @@ def log_per_save(writer, info_dict):
     rank = int(os.environ.get('RANK', 0))
     logging.info(
         'Epoch {} Step {} CV info lr {} {} rank {}'.format(
-            epoch, step + 1, lr, rank, ' '.join(['{} {}'.format(k, v) for k, v in loss_dict.items()])))
+            epoch, step + 1, lr, rank, ' '.join(['{}_{}'.format(k, v) for k, v in loss_dict.items()])))
 
     if writer is not None:
         for k in ['epoch', 'lr']:
