@@ -21,7 +21,7 @@ from copy import deepcopy
 import os
 import torch
 import torch.distributed as dist
-import deepspeed
+# import deepspeed
 
 from hyperpyyaml import load_hyperpyyaml
 
@@ -82,7 +82,7 @@ def get_args():
                         default=60,
                         type=int,
                         help='timeout (in seconds) of cosyvoice_join.')
-    parser = deepspeed.add_config_arguments(parser)
+    # parser = deepspeed.add_config_arguments(parser)
     args = parser.parse_args()
     return args
 
@@ -109,7 +109,7 @@ def main():
     configs['train_conf'].update(vars(args))
 
     # Init env for ddp
-    init_distributed(args)
+    # init_distributed(args)
 
     # Get dataset & dataloader
     train_dataset, cv_dataset, train_data_loader, cv_data_loader = \
@@ -161,14 +161,15 @@ def main():
     for epoch in range(start_epoch + 1, info_dict['max_epoch']):
         executor.epoch = epoch
         train_dataset.set_epoch(epoch)
-        dist.barrier()
-        group_join = dist.new_group(backend="gloo", timeout=datetime.timedelta(seconds=args.timeout))
+        # dist.barrier()
+        # group_join = dist.new_group(backend="gloo", timeout=datetime.timedelta(seconds=args.timeout))
+        group_join = None
         if gan is True:
             executor.train_one_epoc_gan(model, optimizer, scheduler, optimizer_d, scheduler_d, train_data_loader, cv_data_loader,
                                         writer, info_dict, scaler, group_join)
         else:
             executor.train_one_epoc(model, optimizer, scheduler, train_data_loader, cv_data_loader, writer, info_dict, scaler, group_join)
-        dist.destroy_process_group(group_join)
+        # dist.destroy_process_group(group_join)
 
 
 if __name__ == '__main__':

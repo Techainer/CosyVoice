@@ -90,34 +90,16 @@ class Executor:
         logging.info('Epoch {} TRAIN info lr {} rank {}'.format(self.epoch, lr, self.rank))
         logging.info('using accumulate grad, new batch size is {} times'
                      ' larger than before'.format(info_dict['accum_grad']))
-        # A context manager to be used in conjunction with an instance of
-        # torch.nn.parallel.DistributedDataParallel to be able to train
-        # with uneven inputs across participating processes.
         model.train()
-        # model_context = model.join if info_dict['train_engine'] == 'torch_ddp' else nullcontext
-        # with model_context():
         for batch_idx, batch_dict in enumerate(train_data_loader):
             info_dict["tag"] = "TRAIN"
             info_dict["step"] = self.step
             info_dict["epoch"] = self.epoch
             info_dict["batch_idx"] = batch_idx
-            # if cosyvoice_join(group_join, info_dict):
-            #     break
-
-                # Disable gradient synchronizations across DDP processes.
-                # Within this context, gradients will be accumulated on module
-                # variables, which will later be synchronized.
-                if info_dict['train_engine'] == 'torch_ddp' and (batch_idx + 1) % info_dict["accum_grad"] != 0:
-                    context = model.no_sync
-                # Used for single gpu training and DDP gradient synchronization
-                # processes.
-                else:
-                    context = nullcontext
             try:
-                with context():
-                    batch_dict['turn'] = 'discriminator'
-                    info_dict = batch_forward(model, batch_dict, scaler, info_dict)
-                    info_dict = batch_backward(model, scaler, info_dict)
+                batch_dict['turn'] = 'discriminator'
+                info_dict = batch_forward(model, batch_dict, scaler, info_dict)
+                info_dict = batch_backward(model, scaler, info_dict)
                 info_dict = update_parameter_and_lr(model, optimizer_d, scheduler_d, scaler, info_dict)
                 optimizer.zero_grad()
                 log_per_step(writer, info_dict)

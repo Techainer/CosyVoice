@@ -66,26 +66,32 @@ def main():
             logger.info(f'Loading {file}')
             subset_filelist = []
             with open(file, "r", encoding="utf-8") as f:
-                for line in tqdm(f.readlines()):
+                not_exist_count = 0
+                lines = f.readlines()
+                for line in tqdm(lines):
                     line = line.strip().split("|")
                     if len(line) != 3:
                         print(line)
                         continue
                     filepath = line[1]
-                    filepath = filepath.replace('/home/andrew/data/tts', '/data/tts')
+                    # filepath = filepath.replace('/home/andrew/data/tts', '/data/tts')
                     if not os.path.exists(filepath):
                         print(f"File {filepath} not exist")
+                        not_exist_count += 1
                         continue
                     try:
                         y, sr = soundfile.read(filepath)
                     except:
                         print(f"File {filepath} cannot be read")
+                        not_exist_count += 1
                         continue
                     if len(y.shape) != 1:
                         print(f"File {filepath} is not mono")
+                        not_exist_count += 1
                         continue
                     if y.shape[0]/ sr > 15:
                         print(f"File {filepath} is too long")
+                        not_exist_count += 1
                         continue
                     if 'vivos' in str(file):
                         line[2] = line[2].lower().strip()
@@ -95,7 +101,10 @@ def main():
                     text = text.replace(" .", ".").replace(" ,", ",")
                     line = f"{filepath}|{line[0]}|{text}"
                     subset_filelist.append(line)
-            
+
+            if not_exist_count > 0:
+                logger.info(f"Not valid count: {not_exist_count}/{len(lines)}")  
+
             # Split the current subset into train and valid sets
             train_subset, valid_subset = train_test_split(subset_filelist, test_size=args.valid_size, random_state=42)
             train_filelist.extend(train_subset)

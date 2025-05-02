@@ -253,6 +253,8 @@ class Qwen2Encoder(torch.nn.Module):
         new_cache = outs.past_key_values
         return xs, new_cache
 
+    def forward(self, **kargs):
+        return self.model(**kargs)
 
 class Qwen2LM(TransformerLM):
     def __init__(
@@ -277,7 +279,7 @@ class Qwen2LM(TransformerLM):
         self.fill_token = 2
 
         self.llm_embedding = torch.nn.Embedding(2, llm_input_size)
-        self.llm = llm
+        self.llm: Qwen2Encoder = llm
         self.llm_decoder = nn.Linear(llm_output_size, speech_token_size + 3)
         self.criterion_ce = LabelSmoothingLoss(
             size=speech_token_size + 3,
@@ -288,6 +290,7 @@ class Qwen2LM(TransformerLM):
 
         # 3. [Optional] build speech token related modules
         self.speech_embedding = torch.nn.Embedding(speech_token_size + 3, llm_input_size)
+        self.spk_embed_affine_layer = torch.nn.Linear(192, llm_input_size)
 
         # 4. sampling method
         self.sampling = sampling

@@ -22,7 +22,7 @@ import re
 import datetime
 import yaml
 
-import deepspeed
+# import deepspeed
 import torch.optim as optim
 import torch.distributed as dist
 
@@ -30,7 +30,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 from torch.nn.utils import clip_grad_norm_
 
-from deepspeed.runtime.zero.stage_1_and_2 import estimate_zero2_model_states_mem_needs_all_live
+# from deepspeed.runtime.zero.stage_1_and_2 import estimate_zero2_model_states_mem_needs_all_live
 
 from cosyvoice.dataset.dataset import Dataset
 from cosyvoice.utils.scheduler import WarmupLR, NoamHoldAnnealing, ConstantLR
@@ -45,8 +45,8 @@ def init_distributed(args):
     if args.train_engine == 'torch_ddp':
         torch.cuda.set_device(local_rank)
         # dist.init_process_group(args.dist_backend)
-    else:
-        deepspeed.init_distributed(dist_backend=args.dist_backend)
+    # else:
+    #     deepspeed.init_distributed(dist_backend=args.dist_backend)
     return world_size, local_rank, rank
 
 
@@ -98,13 +98,13 @@ def wrap_cuda_model(args, model):
         assert (torch.cuda.is_available())
         model.cuda()
         # model = torch.nn.parallel.DistributedDataParallel(model, find_unused_parameters=True)
-    else:
-        if int(os.environ.get('RANK', 0)) == 0:
-            logging.info("Estimating model states memory needs (zero2)...")
-            estimate_zero2_model_states_mem_needs_all_live(
-                model,
-                num_gpus_per_node=local_world_size,
-                num_nodes=world_size // local_world_size)
+    # else:
+    #     if int(os.environ.get('RANK', 0)) == 0:
+    #         logging.info("Estimating model states memory needs (zero2)...")
+    #         estimate_zero2_model_states_mem_needs_all_live(
+    #             model,
+    #             num_gpus_per_node=local_world_size,
+    #             num_nodes=world_size // local_world_size)
     return model
 
 
@@ -197,14 +197,16 @@ def save_model(model, model_name, info_dict):
     model_dir = info_dict["model_dir"]
     save_model_path = os.path.join(model_dir, '{}.pt'.format(model_name))
 
-    if info_dict["train_engine"] == "torch_ddp":
-        if rank == 0:
-            torch.save({**model.module.state_dict(), 'epoch': info_dict['epoch'], 'step': info_dict['step']}, save_model_path)
-    else:
-        with torch.no_grad():
-            model.save_checkpoint(save_dir=model_dir,
-                                  tag=model_name,
-                                  client_state=info_dict)
+    # if info_dict["train_engine"] == "torch_ddp":
+    #     if rank == 0:
+    # else:
+    torch.save({"model": model.state_dict(), 'epoch': info_dict['epoch'], 'step': info_dict['step']}, save_model_path)
+    # with torch.no_grad():
+    #     model.save_checkpoint(
+    #         save_dir=model_dir,
+    #         tag=model_name,
+    #         client_state=info_dict
+    #     )
     if rank == 0:
         info_path = re.sub('.pt$', '.yaml', save_model_path)
         info_dict['save_time'] = datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')

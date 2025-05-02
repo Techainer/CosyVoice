@@ -1,13 +1,11 @@
-#!/bin/bash
-# Copyright 2024 Alibaba Inc. All Rights Reserved.
 . ./path.sh || exit 1;
 
 stage=5
 stop_stage=5
 
-raw_data_dir=/data/tts
-output_raw_data_dir=data_all
-pretrained_model_dir=../../../pretrained_models/CosyVoice-300M-25Hz
+raw_data_dir=/home/andrew/data/tts
+output_raw_data_dir=data
+pretrained_model_dir=../../../pretrained_models/CosyVoice2-0.5B
 
 if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
   echo "Data preparation, prepare wav.scp/text/utt2spk/spk2utt"
@@ -24,7 +22,7 @@ fi
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
   for x in train valid; do
     echo "Extract discrete speech token, you will get utt2speech_token.pt in $output_raw_data_dir/$x dir"
-    python tools/extract_speech_token.py --dir $output_raw_data_dir/$x --onnx_path $pretrained_model_dir/speech_tokenizer_v1.onnx
+    python tools/extract_speech_token.py --dir $output_raw_data_dir/$x --onnx_path $pretrained_model_dir/speech_tokenizer_v2.onnx
   done
 fi
 
@@ -64,7 +62,7 @@ dist_backend="nccl"
 num_workers=1
 prefetch=100
 train_engine=torch_ddp
-exp_name=ft_25hz_data_all_lr1e-5_warmup5k_maxframe5k_acc1
+exp_name=ft_CosyVoice2-0.5B_lr2e-5_warmup5k_maxframe5k
 
 if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
   echo "Run train. We only support llm traning for now. If your want to train from scratch, please use conf/cosyvoice.fromscratch.yaml"
