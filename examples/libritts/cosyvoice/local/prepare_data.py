@@ -62,7 +62,7 @@ def main():
         #     continue
         # if 'data_bac_nam' not in str(file):
         #     continue
-        if file.name == "metadata.txt":
+        if file.name == "metadata_lower.txt":
             logger.info(f'Loading {file}')
             subset_filelist = []
             with open(file, "r", encoding="utf-8") as f:
