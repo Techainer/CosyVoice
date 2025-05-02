@@ -1,6 +1,6 @@
 . ./path.sh || exit 1;
 
-stage=5
+stage=0
 stop_stage=5
 
 raw_data_dir=/home/andrew/data/tts

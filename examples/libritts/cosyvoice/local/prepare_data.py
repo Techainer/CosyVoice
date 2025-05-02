@@ -62,6 +62,7 @@ def main():
         #     continue
         # if 'data_bac_nam' not in str(file):
         #     continue
+        spk = os.path.dirname(file).split("/")[-1]
         if file.name == "metadata_lower.txt":
             logger.info(f'Loading {file}')
             subset_filelist = []
@@ -70,10 +71,10 @@ def main():
                 lines = f.readlines()
                 for line in tqdm(lines):
                     line = line.strip().split("|")
-                    if len(line) != 3:
-                        print(line)
-                        continue
-                    filepath = line[1]
+                    # if len(line) != 3:
+                    #     print(line)
+                    #     continue
+                    filepath = line[0]
                     # filepath = filepath.replace('/home/andrew/data/tts', '/data/tts')
                     if not os.path.exists(filepath):
                         print(f"File {filepath} not exist")
@@ -94,12 +95,12 @@ def main():
                         not_exist_count += 1
                         continue
                     if 'vivos' in str(file):
-                        line[2] = line[2].lower().strip()
-                    text = line[2]
+                        line[1] = line[1].lower().strip()
+                    text = line[1]
                     if not text.endswith("."):
                         text += "."
                     text = text.replace(" .", ".").replace(" ,", ",")
-                    line = f"{filepath}|{line[0]}|{text}"
+                    line = f"{filepath}|{spk}|{text}"
                     subset_filelist.append(line)
 
             if not_exist_count > 0:
