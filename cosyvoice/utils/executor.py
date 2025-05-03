@@ -103,10 +103,10 @@ class Executor:
                 info_dict = update_parameter_and_lr(model, optimizer_d, scheduler_d, scaler, info_dict)
                 optimizer.zero_grad()
                 log_per_step(writer, info_dict)
-                with context():
-                    batch_dict['turn'] = 'generator'
-                    info_dict = batch_forward(model, batch_dict, scaler, info_dict)
-                    info_dict = batch_backward(model, scaler, info_dict)
+                # with context():
+                batch_dict['turn'] = 'generator'
+                info_dict = batch_forward(model, batch_dict, scaler, info_dict)
+                info_dict = batch_backward(model, scaler, info_dict)
                 info_dict = update_parameter_and_lr(model, optimizer, scheduler, scaler, info_dict)
                 optimizer_d.zero_grad()
                 log_per_step(writer, info_dict)

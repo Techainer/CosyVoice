@@ -90,8 +90,7 @@ def get_args():
 @record
 def main():
     args = get_args()
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s %(levelname)s %(message)s')
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
     # gan train has some special initialization logic
     gan = True if args.model == 'hifigan' else False
 
