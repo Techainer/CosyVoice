@@ -62,7 +62,7 @@ dist_backend="nccl"
 num_workers=1
 prefetch=100
 train_engine=torch_ddp
-exp_name=ft_CosyVoice2-0.5B_lr2e-5_warmup5k_maxframe5k
+exp_name=ft_CosyVoice2-0.5B_lr2e-5_warmup2k5_maxframe5k
 
 if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
   echo "Run train. We only support llm traning for now. If your want to train from scratch, please use conf/cosyvoice.fromscratch.yaml"
@@ -76,7 +76,7 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
     echo "======================"
       python cosyvoice/bin/train.py \
         --train_engine $train_engine \
-        --config conf/cosyvoice.yaml \
+        --config conf/cosyvoice2.yaml \
         --train_data $output_raw_data_dir/train/parquet/data.list \
         --cv_data $output_raw_data_dir/valid/parquet/data.list \
         --model $model \

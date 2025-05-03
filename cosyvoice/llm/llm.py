@@ -253,8 +253,6 @@ class Qwen2Encoder(torch.nn.Module):
         new_cache = outs.past_key_values
         return xs, new_cache
 
-    def forward(self, **kargs):
-        return self.model(**kargs)
 
 class Qwen2LM(TransformerLM):
     def __init__(
@@ -366,7 +364,7 @@ class Qwen2LM(TransformerLM):
         lm_target = lm_target.to(device)
 
         # 4. run lm forward
-        lm_output, lm_output_mask = self.llm(lm_input, lm_input_len.to(device))
+        lm_output, lm_output_mask = self.llm.forward(lm_input, lm_input_len.to(device))
         logits = self.llm_decoder(lm_output)
         loss = self.criterion_ce(logits, lm_target.to(device))
         acc = th_accuracy(logits.view(-1, self.speech_token_size + 3), lm_target, ignore_label=IGNORE_ID)

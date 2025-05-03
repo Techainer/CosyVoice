@@ -54,7 +54,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dir", type=str)
     parser.add_argument("--onnx_path", type=str)
-    parser.add_argument("--num_thread", type=int, default=8)
+    parser.add_argument("--num_thread", type=int, default=16)
     args = parser.parse_args()
 
     utt2wav, utt2spk = {}, {}

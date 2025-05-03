@@ -9,7 +9,7 @@ sample_rate: 24000
 llm_input_size: 896
 llm_output_size: 896
 spk_embed_dim: 192
-qwen_pretrain_path: ''
+qwen_pretrain_path: '/home/andrew/CosyVoice/pretrained_models/CosyVoice2-0.5B/CosyVoice-BlankEN'
 token_frame_rate: 25
 token_mel_ratio: 2
 
@@ -206,7 +206,7 @@ data_pipeline_gan: [
 train_conf:
     optim: adam
     optim_conf:
-        lr: 1e-5 # change to 1e-5 during sft
+        lr: 2e-5 # change to 1e-5 during sft
     scheduler: constantlr # change to constantlr during sft
     scheduler_conf:
         warmup_steps: 2500
@@ -220,11 +220,11 @@ train_conf:
 train_conf_gan:
     optim: adam
     optim_conf:
-        lr: 0.0002 # use small lr for gan training
+        lr: 2e-5 # use small lr for gan training
     scheduler: constantlr
     optim_d: adam
     optim_conf_d:
-        lr: 0.0002 # use small lr for gan training
+        lr: 2e-5 # use small lr for gan training
     scheduler_d: constantlr
     max_epoch: 200
     grad_clip: 5
