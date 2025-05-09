@@ -73,12 +73,12 @@ class Executor:
             # NOTE specify save_per_step in cosyvoice.yaml if you want to enable step save
             if info_dict['save_per_step'] > 0 and (self.step + 1) % info_dict['save_per_step'] == 0 and \
                 (batch_idx + 1) % info_dict["accum_grad"] == 0:
-                dist.barrier()
+                # dist.barrier()
                 self.cv(model, cv_data_loader, writer, info_dict, on_batch_end=False)
                 model.train()
             if (batch_idx + 1) % info_dict["accum_grad"] == 0:
                 self.step += 1
-        dist.barrier()
+        # dist.barrier()
         self.cv(model, cv_data_loader, writer, info_dict, on_batch_end=True)
 
     def train_one_epoc_gan(self, model, optimizer, scheduler, optimizer_d, scheduler_d, train_data_loader, cv_data_loader,

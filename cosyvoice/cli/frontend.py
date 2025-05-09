@@ -26,7 +26,7 @@ import re
 import inflect
 from loguru import logger
 from vinorm import TTSnorm as Vinormalizer
-from tn.chinese.normalizer import Normalizer as ZhNormalizer
+# from tn.chinese.normalizer import Normalizer as ZhNormalizer
 use_ttsfrd = False
 from cosyvoice.utils.frontend_utils import contains_chinese, replace_blank, replace_corner_mark, remove_bracket, spell_out_number, split_paragraph
 
@@ -56,7 +56,7 @@ class CosyVoiceFrontEnd:
             self.spk2info = {}
         self.allowed_special = allowed_special
         self.use_ttsfrd = use_ttsfrd
-        self.zh_tn_model = ZhNormalizer(remove_erhua=False, full_to_half=False)
+        # self.zh_tn_model = ZhNormalizer(remove_erhua=False, full_to_half=False)
         # self.en_tn_model = EnNormalizer()
 
     def _extract_text_token(self, text):

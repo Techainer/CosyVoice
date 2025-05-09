@@ -90,7 +90,7 @@ def main():
                         print(f"File {filepath} is not mono")
                         not_exist_count += 1
                         continue
-                    if y.shape[0]/ sr > 15:
+                    if y.shape[0]/ sr > 20:
                         print(f"File {filepath} is too long")
                         not_exist_count += 1
                         continue

@@ -46,7 +46,7 @@ def get_args():
     parser.add_argument('--config', required=True, help='config file')
     parser.add_argument('--train_data', required=True, help='train data file')
     parser.add_argument('--cv_data', required=True, help='cv data file')
-    parser.add_argument('--qwen_pretrain_path', required=False, help='qwen pretrain path')
+    parser.add_argument('--qwen_pretrain_path', required=True, help='qwen pretrain path')
     parser.add_argument('--checkpoint', help='checkpoint model')
     parser.add_argument('--model_dir', required=True, help='save model dir')
     parser.add_argument('--tensorboard_dir',
