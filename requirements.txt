@@ -39,5 +39,5 @@ fastapi==0.115.6
 fastapi-cli==0.0.4
 loguru==0.7.2
 natsort==8.4.0
-# torch==2.0.1
-WeTextProcessing==1.0.3
+huggingface_hub==0.25.2
+vinorm==2.0.7

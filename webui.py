@@ -87,7 +87,7 @@ examples = [
     ]
 ]
 stream_mode_list = [('No', False), ('Yes', True)]
-max_val = 0.9
+max_val = 0.7
 
 def generate_seed():
     seed = random.randint(1, 100000000)
@@ -100,24 +100,28 @@ def preprocess_prompt_audio(
     speech: Union[str, np.ndarray],
     vad: bool = False,
     min_duration: float=3,
-    max_duration: float=5
+    max_duration: float=4
 ) -> torch.Tensor:
-    if isinstance(speech, str):
-        speech = load_wav(speech, prompt_sr)
-    elif isinstance(speech, np.ndarray):
-        speech = torch.from_numpy(speech)
-
-    if speech.abs().max() > max_val:
-        speech = speech / speech.abs().max() * max_val
-    if vad:
-        speech = get_speech(
-            audio_input=speech.squeeze(0),
-            min_duration=min_duration,
-            max_duration=max_duration
-        ).unsqueeze(0)
-    else:
-        speech = speech[:, :int(max_duration*prompt_sr)]
-    # speech = fade_in_out_audio(speech)
+    try:
+        if isinstance(speech, str):
+            speech = load_wav(speech, prompt_sr)
+        elif isinstance(speech, np.ndarray):
+            speech = torch.from_numpy(speech)
+        if speech.abs().max() > max_val:
+            speech = speech / speech.abs().max() * max_val
+        if vad:
+            speech = get_speech(
+                audio_input=speech.squeeze(0),
+                min_duration=min_duration,
+                max_duration=max_duration
+            ).unsqueeze(0)
+        else:
+            speech = speech[:, :int(max_duration*prompt_sr)]
+        # speech = fade_in_out_audio(speech)
+    except Exception as e:
+        print(f'Read audio file error: {e}')
+        gr.Warning('Read audio file error')
+        return torch.zeros(1, 4000).float()
     return speech
 
 def change_instruction(mode_checkbox_group):
@@ -348,7 +352,7 @@ def main():
                     generate_btn = gr.Button("Generate", variant="primary")
 
                 with gr.Column():
-                    output_audio = gr.Audio(label='Generated audio', streaming=stream)
+                    output_audio = gr.Audio(label='Generated audio', streaming=False)
                     gr.Examples(examples, inputs=[tts_text, mode_checkbox_group, prompt_text, prompt_wav_upload])
 
                 seed_button.click(fn=generate_seed, outputs=seed)

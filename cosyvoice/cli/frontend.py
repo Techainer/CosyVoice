@@ -201,9 +201,9 @@ class CosyVoiceFrontEnd:
                 text=text,
                 tokenize=partial(self.tokenizer.encode, allowed_special=self.allowed_special),
                 lang="en",
-                token_max_n=40,
-                token_min_n=10,
-                merge_len=5,
+                token_max_n=50,
+                token_min_n=30,
+                merge_len=20,
                 comma_split=False
             ))
         logger.info(f"Text normalized: {' '.join(texts)}")

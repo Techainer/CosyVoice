@@ -152,7 +152,7 @@ def fade_in_out(fade_in_mel, fade_out_mel, window):
 def fade_in_out_audio(audio: torch.Tensor):
     device = audio.device
     audio = audio.squeeze(0).cpu()
-    overlap_len = int(22050 * 0.15)
+    overlap_len = int(22050 * 0.02)
     window = torch.linspace(0, 1, overlap_len, dtype=torch.float32)
     audio[:overlap_len] *= window
     audio[-overlap_len:] *= window.flip([0])
