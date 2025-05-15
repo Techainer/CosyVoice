@@ -191,7 +191,7 @@ class CosyVoiceFrontEnd:
             text = remove_urls_and_links(text)
             text = remove_emojis(text)
             text = remove_punc(text)
-            text = Vinormalizer(text, lower=False)
+            text = Vinormalizer(text, lower=True)
 
             if not split:
                 return text

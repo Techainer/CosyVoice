@@ -58,7 +58,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_utts_per_parquet',
                         type=int,
-                        default=1000,
+                        default=5000,
                         help='num utts per parquet')
     parser.add_argument('--num_processes',
                         type=int,
@@ -87,6 +87,13 @@ if __name__ == "__main__":
     spk2embedding = torch.load('{}/spk2embedding.pt'.format(args.src_dir))
     utt2speech_token = torch.load('{}/utt2speech_token.pt'.format(args.src_dir))
     utts = list(utt2wav.keys())
+
+    print(f"total utt2wav {len(utt2wav)}")
+    print(f"total utt2text {len(utt2text)}")
+    print(f"total utt2spk {len(utt2spk)}")
+    print(f"total utt2embedding {len(utt2embedding)}")
+    print(f"total spk2embedding {len(spk2embedding)}")
+    print(f"total utt2speech_token {len(utt2speech_token)}")
 
     # Using process pool to speedup
     pool = multiprocessing.Pool(processes=args.num_processes)

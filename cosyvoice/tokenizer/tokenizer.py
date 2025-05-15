@@ -280,11 +280,11 @@ def get_qwen_tokenizer(
 
 
 if __name__ == "__main__":
-    tokenizer = get_tokenizer(
-        multilingual=True,
-        num_languages=100,
-        language="en",
-        task="transcribe"
+    tokenizer = get_qwen_tokenizer(
+        token_path="/home/andrew/CosyVoice/pretrained_models/CosyVoice2-0.5B/CosyVoice-BlankEN",
+        skip_special_tokens=True
     )
     print(tokenizer)
-    print(tokenizer.decode(tokenizer.encode("xin chào Việt Nam, tôi là nam, 1234 1 2?")))
+    ids = tokenizer.encode("xin chào Việt Nam, tôi là nam, 1234 1 2?")
+    print(ids)
+    print(tokenizer.decode(ids))

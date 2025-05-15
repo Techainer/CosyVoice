@@ -5,7 +5,7 @@ stop_stage=5
 
 raw_data_dir=/home/andrew/data/tts
 output_raw_data_dir=data
-pretrained_model_dir=../../../pretrained_models/CosyVoice2-0.5B
+pretrained_model_dir=../../../pretrained_models/CosyVoice-300M-25Hz
 
 if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
   echo "Data preparation, prepare wav.scp/text/utt2spk/spk2utt"
@@ -22,7 +22,7 @@ fi
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
   for x in train valid; do
     echo "Extract discrete speech token, you will get utt2speech_token.pt in $output_raw_data_dir/$x dir"
-    python tools/extract_speech_token.py --dir $output_raw_data_dir/$x --onnx_path $pretrained_model_dir/speech_tokenizer_v2.onnx
+    python tools/extract_speech_token.py --dir $output_raw_data_dir/$x --onnx_path $pretrained_model_dir/speech_tokenizer_v1.onnx
   done
 fi
 
@@ -62,7 +62,7 @@ dist_backend="nccl"
 num_workers=1
 prefetch=100
 train_engine=torch_ddp
-exp_name=ft_CosyVoice2-0.5B_lr2e-5_warmup5k_maxframe5k
+exp_name=ft_CosyVoice-300M-25Hz_lr2e-5_warmup2k_maxframe4k
 
 if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
   echo "Run train. We only support llm traning for now. If your want to train from scratch, please use conf/cosyvoice.fromscratch.yaml"
@@ -70,7 +70,7 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
     echo "Notice deepspeed has its own optimizer config. Modify conf/ds_stage2.json if necessary"
   fi
   # for model in llm flow; do
-  for model in llm; do
+  for model in flow; do
     echo "======================"
     echo "START TRAINING: $model"
     echo "======================"

@@ -338,13 +338,13 @@ def main():
                         choices=inference_mode_list,
                         label='Mode',
                         value=inference_mode_list[0],
-                        visible=False
+                        visible=True
                     )
                     stream = gr.Radio(
                         label='Enable streaming inference',
                         choices=stream_mode_list,
                         value=stream_mode_list[0][1],
-                        visible=False
+                        visible=True
                     )
                     speed = gr.Slider(label="Speed", value=1, minimum=0.5, maximum=2.0, step=0.1)
                     seed_button = gr.Button(value="\U0001F3B2", visible=False)
@@ -352,7 +352,7 @@ def main():
                     generate_btn = gr.Button("Generate", variant="primary")
 
                 with gr.Column():
-                    output_audio = gr.Audio(label='Generated audio', streaming=False)
+                    output_audio = gr.Audio(label='Generated audio')
                     gr.Examples(examples, inputs=[tts_text, mode_checkbox_group, prompt_text, prompt_wav_upload])
 
                 seed_button.click(fn=generate_seed, outputs=seed)
@@ -366,77 +366,6 @@ def main():
                     ],
                     outputs=output_audio
                 )
-        # with gr.Tab('Voice conversion'):
-        #     with gr.Row():
-        #         with gr.Column():
-        #             ref_wav_upload = gr.Audio(sources='upload', type='filepath', label='Reference audio')
-        #             target_wav_upload = gr.Audio(sources='upload', type='filepath', label='Target audio')
-        #         with gr.Column():
-        #             output_ref_audio = gr.Audio(label='Pre-processed reference audio', sources='upload', type='numpy', editable=False)
-        #             output_target_audio = gr.Audio(label='Pre-processed target audio', sources='upload', type='numpy', editable=False)
-        #     with gr.Row():
-        #         with gr.Column():
-        #             min_speech_dur = gr.Number(value=3, minimum=-1, maximum=30, label="Minimum speech duration")
-        #         with gr.Column():
-        #             max_speech_dur = gr.Number(value=5, minimum=-1, maximum=30, label="Maximum speech duration")
-        #     with gr.Row():
-        #         output_audio = gr.Audio(label='Generated audio', streaming=False)
-        #     with gr.Row():
-        #         generate_btn = gr.Button("Generate", variant="primary")
-        #         ref_wav_upload.upload(
-        #             fn=lambda a: (prompt_sr, preprocess_prompt_audio(a, False, -1, -1).numpy().flatten()),
-        #             inputs=[ref_wav_upload],
-        #             outputs=[output_ref_audio]
-        #         )
-        #         target_wav_upload.upload(
-        #             fn=lambda a,b,c,d: (prompt_sr, preprocess_prompt_audio(a, b, c, d).numpy().flatten()),
-        #             inputs=[target_wav_upload, enable_vad, min_speech_dur, max_speech_dur],
-        #             outputs=[output_target_audio]
-        #         )
-        #         generate_btn.click(
-        #             fn=generate_audio_vc,
-        #             inputs=[
-        #                 output_ref_audio,
-        #                 output_target_audio
-        #             ],
-        #             outputs=output_audio
-        #         )
-                
-#     demo.title = 'Text2Speech: A fast TTS architecture with conditional flow matching'
-#         gr.Markdown("### 代码库 [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) \
-#                     预训练模型 [CosyVoice-300M](https://www.modelscope.cn/models/iic/CosyVoice-300M) \
-#                     [CosyVoice-300M-Instruct](https://www.modelscope.cn/models/iic/CosyVoice-300M-Instruct) \
-#                     [CosyVoice-300M-SFT](https://www.modelscope.cn/models/iic/CosyVoice-300M-SFT)")
-#         gr.Markdown("#### 请输入需要合成的文本，选择推理模式，并按照提示步骤进行操作")
-
-#         tts_text = gr.Textbox(label="输入合成文本", lines=1, value="我是通义实验室语音团队全新推出的生成式语音大模型，提供舒适自然的语音合成能力。")
-#         with gr.Row():
-#             mode_checkbox_group = gr.Radio(choices=inference_mode_list, label='选择推理模式', value=inference_mode_list[0])
-#             instruction_text = gr.Text(label="操作步骤", value=instruct_dict[inference_mode_list[0]], scale=0.5)
-#             sft_dropdown = gr.Dropdown(choices=sft_spk, label='选择预训练音色', value=sft_spk[0], scale=0.25)
-#             stream = gr.Radio(choices=stream_mode_list, label='是否流式推理', value=stream_mode_list[0][1])
-#             speed = gr.Number(value=1, label="速度调节(仅支持非流式推理)", minimum=0.5, maximum=2.0, step=0.1)
-#             with gr.Column(scale=0.25):
-#                 seed_button = gr.Button(value="\U0001F3B2")
-#                 seed = gr.Number(value=0, label="随机推理种子")
-
-#         with gr.Row():
-#             prompt_wav_upload = gr.Audio(sources='upload', type='filepath', label='选择prompt音频文件，注意采样率不低于16khz')
-#             prompt_wav_record = gr.Audio(sources='microphone', type='filepath', label='录制prompt音频文件')
-#         prompt_text = gr.Textbox(label="输入prompt文本", lines=1, placeholder="请输入prompt文本，需与prompt音频内容一致，暂时不支持自动识别...", value='')
-#         instruct_text = gr.Textbox(label="输入instruct文本", lines=1, placeholder="请输入instruct文本.", value='')
-
-#         generate_button = gr.Button("生成音频")
-
-#         audio_output = gr.Audio(label="合成音频", autoplay=True, streaming=True)
-
-#         seed_button.click(generate_seed, inputs=[], outputs=seed)
-#         generate_button.click(generate_audio,
-#                               inputs=[tts_text, mode_checkbox_group, sft_dropdown, prompt_text, prompt_wav_upload, prompt_wav_record, instruct_text,
-#                                       seed, stream, speed],
-#                               outputs=[audio_output])
-#         mode_checkbox_group.change(fn=change_instruction, inputs=[mode_checkbox_group], outputs=[instruction_text])
-        
     demo.queue(max_size=4, default_concurrency_limit=2)
     demo.launch(server_name='0.0.0.0', server_port=args.port, share=True)
 
@@ -456,7 +385,7 @@ if __name__ == '__main__':
     sft_spk = cosyvoice.list_available_spks()
     if len(sft_spk) == 0:
         sft_spk = ['']
-    prompt_sr, target_sr = 16000, 22050
+    prompt_sr, target_sr = 16000, cosyvoice.sample_rate
     default_data = np.zeros(cosyvoice.sample_rate)
     main()
 

@@ -145,9 +145,9 @@ def init_optimizer_and_scheduler(args, configs, model, gan):
     else:
         # currently we wrap generator and discriminator in one model, so we cannot use deepspeed
         if configs['train_conf']['optim'] == 'adam':
-            optimizer = optim.Adam(model.module.generator.parameters(), **configs['train_conf']['optim_conf'])
+            optimizer = optim.Adam(model.generator.parameters(), **configs['train_conf']['optim_conf'])
         elif configs['train_conf']['optim'] == 'adamw':
-            optimizer = optim.AdamW(model.module.generator.parameters(), **configs['train_conf']['optim_conf'])
+            optimizer = optim.AdamW(model.generator.parameters(), **configs['train_conf']['optim_conf'])
         else:
             raise ValueError("unknown optimizer: " + configs['train_conf'])
 
@@ -164,9 +164,9 @@ def init_optimizer_and_scheduler(args, configs, model, gan):
             raise ValueError("unknown scheduler: " + configs['train_conf'])
 
         if configs['train_conf']['optim_d'] == 'adam':
-            optimizer_d = optim.Adam(model.module.discriminator.parameters(), **configs['train_conf']['optim_conf'])
+            optimizer_d = optim.Adam(model.discriminator.parameters(), **configs['train_conf']['optim_conf'])
         elif configs['train_conf']['optim_d'] == 'adamw':
-            optimizer_d = optim.AdamW(model.module.discriminator.parameters(), **configs['train_conf']['optim_conf'])
+            optimizer_d = optim.AdamW(model.discriminator.parameters(), **configs['train_conf']['optim_conf'])
         else:
             raise ValueError("unknown optimizer: " + configs['train_conf'])
 
@@ -196,17 +196,9 @@ def save_model(model, model_name, info_dict):
     rank = int(os.environ.get('RANK', 0))
     model_dir = info_dict["model_dir"]
     save_model_path = os.path.join(model_dir, '{}.pt'.format(model_name))
-
-    # if info_dict["train_engine"] == "torch_ddp":
-    #     if rank == 0:
-    # else:
-    torch.save({"model": model.state_dict(), 'epoch': info_dict['epoch'], 'step': info_dict['step']}, save_model_path)
-    # with torch.no_grad():
-    #     model.save_checkpoint(
-    #         save_dir=model_dir,
-    #         tag=model_name,
-    #         client_state=info_dict
-    #     )
+    # torch.save({"model": model.state_dict(), 'epoch': info_dict['epoch'], 'step': info_dict['step']}, save_model_path)
+    torch.save(model.state_dict(), save_model_path)
+    
     if rank == 0:
         info_path = re.sub('.pt$', '.yaml', save_model_path)
         info_dict['save_time'] = datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')
@@ -214,7 +206,6 @@ def save_model(model, model_name, info_dict):
             data = yaml.dump(info_dict)
             fout.write(data)
         logging.info('[Rank {}] Checkpoint: save to checkpoint {}'.format(rank, save_model_path))
-
 
 def cosyvoice_join(group_join, info_dict):
     world_size = int(os.environ.get('WORLD_SIZE', 1))
@@ -322,15 +313,15 @@ def log_per_step(writer, info_dict):
                 writer.add_scalar('{}/{}'.format(tag, k), v, step + 1)
 
     # TRAIN & CV, Shell log (stdout)
-    if (info_dict['batch_idx'] + 1) % info_dict['log_interval'] == 0:
-        log_str = '[{}] Epoch {} Batch {} '.format(tag, epoch, batch_idx + 1)
-        for name, value in loss_dict.items():
-            log_str += '{} {:.6f} '.format(name, value)
-        if tag == "TRAIN":
-            log_str += 'lr {:.8f} grad_norm {:.6f}'.format(
-                info_dict["lr"], info_dict['grad_norm'])
-        log_str += ' rank {}'.format(rank)
-        logging.debug(log_str)
+    # if (info_dict['batch_idx'] + 1) % info_dict['log_interval'] == 0:
+    #     log_str = '[{}] Epoch {} Batch {} '.format(tag, epoch, batch_idx + 1)
+    #     for name, value in loss_dict.items():
+    #         log_str += '{} {:.6f} '.format(name, value)
+    #     if tag == "TRAIN":
+    #         log_str += 'lr {:.8f} grad_norm {:.6f}'.format(
+    #             info_dict["lr"], info_dict['grad_norm'])
+    #     log_str += ' rank {}'.format(rank)
+    #     logging.debug(log_str)
 
 
 def log_per_save(writer, info_dict):
@@ -340,9 +331,7 @@ def log_per_save(writer, info_dict):
     loss_dict = info_dict["loss_dict"]
     lr = info_dict['lr']
     rank = int(os.environ.get('RANK', 0))
-    logging.info(
-        'Epoch {} Step {} CV info lr {} {} rank {}'.format(
-            epoch, step + 1, lr, rank, ' '.join(['{} {}'.format(k, v) for k, v in loss_dict.items()])))
+    logging.info('Epoch {} Step {} CV info lr {} {} rank {}'.format(epoch, step + 1, lr, rank, ' '.join(['{} {}'.format(k, v) for k, v in loss_dict.items()])))
 
     if writer is not None:
         for k in ['epoch', 'lr']:

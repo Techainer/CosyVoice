@@ -17,6 +17,7 @@ import random
 import json
 import math
 from functools import partial
+import pyarrow.parquet as pq
 
 import torch
 import torch.distributed as dist
@@ -32,10 +33,14 @@ class Processor(IterableDataset):
         self.f = f
         self.args = args
         self.kw = kw
+        self.total = 0
 
     def set_epoch(self, epoch):
         self.source.set_epoch(epoch)
 
+    def __len__(self):
+        return self.total
+    
     def __iter__(self):
         """ Return an iterator over the source dataset processed by the
             given processor.
@@ -144,6 +149,12 @@ def Dataset(data_list_file,
     """
     assert mode in ['train', 'inference']
     lists = read_lists(data_list_file)
+
+    total_rows = 0
+    for url in lists:
+        parquet_file = pq.ParquetFile(url)
+        total_rows += parquet_file.metadata.num_rows
+
     if mode == 'inference':
         with open(tts_file) as f:
             tts_data = json.load(f)
@@ -161,4 +172,5 @@ def Dataset(data_list_file,
         data_pipeline[-1] = partial(data_pipeline[-1], gan=gan)
     for func in data_pipeline:
         dataset = Processor(dataset, func, mode=mode)
+    dataset.total = total_rows
     return dataset

@@ -288,7 +288,7 @@ class Qwen2LM(TransformerLM):
 
         # 3. [Optional] build speech token related modules
         self.speech_embedding = torch.nn.Embedding(speech_token_size + 3, llm_input_size)
-        self.spk_embed_affine_layer = torch.nn.Linear(192, llm_input_size)
+        # self.spk_embed_affine_layer = torch.nn.Linear(192, llm_input_size)
 
         # 4. sampling method
         self.sampling = sampling

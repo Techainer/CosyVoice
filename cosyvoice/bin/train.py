@@ -46,7 +46,7 @@ def get_args():
     parser.add_argument('--config', required=True, help='config file')
     parser.add_argument('--train_data', required=True, help='train data file')
     parser.add_argument('--cv_data', required=True, help='cv data file')
-    parser.add_argument('--qwen_pretrain_path', required=True, help='qwen pretrain path')
+    parser.add_argument('--qwen_pretrain_path', required=False, help='qwen pretrain path')
     parser.add_argument('--checkpoint', help='checkpoint model')
     parser.add_argument('--model_dir', required=True, help='save model dir')
     parser.add_argument('--tensorboard_dir',
@@ -90,11 +90,12 @@ def get_args():
 @record
 def main():
     args = get_args()
+    print(args)
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
     # gan train has some special initialization logic
     gan = True if args.model == 'hifigan' else False
 
-    override_dict = {k: None for k in ['llm', 'flow', 'hift', 'hifigan'] if k != args.model}
+    override_dict = {k: None for k in ['llm', 'flow', 'hift'] if k != args.model}
     if gan is True:
         override_dict.pop('hift')
     try:
@@ -124,13 +125,16 @@ def main():
     model = configs[args.model]
     start_step, start_epoch = 0, -1
     if args.checkpoint is not None:
+        logging.info('loading checkpoint {}'.format(args.checkpoint))
         if os.path.exists(args.checkpoint):
-            state_dict = torch.load(args.checkpoint, map_location='cpu')
-            model.load_state_dict(state_dict, strict=False)
+            state_dict = torch.load(args.checkpoint, weights_only=True, map_location='cpu')
+            model.load_state_dict(state_dict, strict=True)
             if 'step' in state_dict:
                 start_step = state_dict['step']
+                logging.info('start step {}'.format(start_step))
             if 'epoch' in state_dict:
                 start_epoch = state_dict['epoch']
+                logging.info('start epoch {}'.format(start_epoch))
         else:
             logging.warning('checkpoint {} do not exsist!'.format(args.checkpoint))
 
@@ -160,15 +164,12 @@ def main():
     for epoch in range(start_epoch + 1, info_dict['max_epoch']):
         executor.epoch = epoch
         train_dataset.set_epoch(epoch)
-        # dist.barrier()
-        # group_join = dist.new_group(backend="gloo", timeout=datetime.timedelta(seconds=args.timeout))
         group_join = None
         if gan is True:
             executor.train_one_epoc_gan(model, optimizer, scheduler, optimizer_d, scheduler_d, train_data_loader, cv_data_loader,
                                         writer, info_dict, scaler, group_join)
         else:
             executor.train_one_epoc(model, optimizer, scheduler, train_data_loader, cv_data_loader, writer, info_dict, scaler, group_join)
-        # dist.destroy_process_group(group_join)
 
 
 if __name__ == '__main__':

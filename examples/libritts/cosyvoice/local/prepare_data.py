@@ -58,7 +58,7 @@ def main():
     valid_filelist = []
     
     for file in files:
-        # if 'vivoice' in str(file) or 'voice_clone' in str(file):
+        # if 'vivoice' not in str(file):
         #     continue
         # if 'data_bac_nam' not in str(file):
         #     continue
@@ -94,12 +94,17 @@ def main():
                         print(f"File {filepath} is too long")
                         not_exist_count += 1
                         continue
+                    if y.shape[0]/ sr < 0.5:
+                        print(f"File {filepath} is too short")
+                        not_exist_count += 1
+                        continue
                     if 'vivos' in str(file):
                         line[1] = line[1].lower().strip()
                     text = line[1]
-                    if not text.endswith("."):
+                    if not text.endswith(".") and not text.endswith("?") and not text.endswith("!"):
                         text += "."
                     text = text.replace(" .", ".").replace(" ,", ",")
+                    text = " ".join(text.split()).lower()
                     line = f"{filepath}|{spk}|{text}"
                     subset_filelist.append(line)
 

@@ -4,7 +4,7 @@ stage=5
 stop_stage=5
 
 raw_data_dir=/home/andrew/data/tts
-output_raw_data_dir=data
+output_raw_data_dir=data_vivoice
 pretrained_model_dir=../../../pretrained_models/CosyVoice2-0.5B
 
 if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
@@ -20,7 +20,7 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
 fi
 
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
-  for x in valid; do
+  for x in train valid; do
     echo "Extract discrete speech token, you will get utt2speech_token.pt in $output_raw_data_dir/$x dir"
     python tools/extract_speech_token.py --dir $output_raw_data_dir/$x --onnx_path $pretrained_model_dir/speech_tokenizer_v2.onnx
   done
@@ -28,9 +28,9 @@ fi
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
   echo "Prepare required parquet format data, you should have prepared wav.scp/text/utt2spk/spk2utt/utt2embedding.pt/spk2embedding.pt/utt2speech_token.pt"
-  for x in valid train; do
+  for x in train valid; do
     mkdir -p $output_raw_data_dir/$x/parquet
-    python tools/make_parquet_list.py --num_utts_per_parquet 5000 \
+    python tools/make_parquet_list.py --num_utts_per_parquet 1000 \
       --num_processes 8 \
       --src_dir $output_raw_data_dir/$x \
       --des_dir $output_raw_data_dir/$x/parquet
@@ -62,7 +62,7 @@ dist_backend="nccl"
 num_workers=1
 prefetch=100
 train_engine=torch_ddp
-exp_name=CosyVoice2-0.5B_ft_all_data_lower_lr1e-5_warmup500_maxframe10k_num_decoding_left_chunks_1
+exp_name=ft_data_vivoice_CosyVoice2-0.5B_lr1e-5_maxframe5k
 
 if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
   echo "Run train. We only support llm traning for now. If your want to train from scratch, please use conf/cosyvoice.fromscratch.yaml"
