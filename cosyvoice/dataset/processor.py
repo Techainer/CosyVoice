@@ -85,9 +85,16 @@ def filter(data,
             Iterable[{key, wav, label, sample_rate}]
     """
     for sample in data:
-        sample['speech'], sample['sample_rate'] = torchaudio.load(BytesIO(sample['audio_data']))
-        sample['speech'] = sample['speech'].mean(dim=0, keepdim=True)
-        del sample['audio_data']
+        if "libritts_train_clean_100" in sample["wav"]:
+            continue
+        if "audio_data" in sample:
+            sample['speech'], sample['sample_rate'] = torchaudio.load(BytesIO(sample['audio_data']))
+            sample['speech'] = sample['speech'].mean(dim=0, keepdim=True)
+            del sample['audio_data']
+        else:
+            sample['speech'], sample['sample_rate'] = torchaudio.load(sample['wav'])
+            sample['speech'] = sample['speech'].mean(dim=0, keepdim=True)
+            
         # sample['wav'] is torch.Tensor, we have 100 frames every second
         num_frames = sample['speech'].size(1) / sample['sample_rate'] * 100
         if num_frames < min_length:

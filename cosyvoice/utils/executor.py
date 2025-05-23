@@ -68,32 +68,30 @@ class Executor:
                 "epoch": self.epoch, "batch_idx": batch_idx
             })
 
-            try:
-                batch_dict['turn'] = 'discriminator'
-                info_dict = batch_forward(model, batch_dict, scaler, info_dict)
-                info_dict = batch_backward(model, scaler, info_dict)
-                info_dict = update_parameter_and_lr(model, optimizer_d, scheduler_d, scaler, info_dict)
-                optimizer.zero_grad()
+            batch_dict['turn'] = 'discriminator'
+            info_dict = batch_forward(model, batch_dict, scaler, info_dict)
+            info_dict = batch_backward(model, scaler, info_dict)
+            info_dict = update_parameter_and_lr(model, optimizer_d, scheduler_d, scaler, info_dict)
+            optimizer.zero_grad()
 
-                batch_dict['turn'] = 'generator'
-                info_dict = batch_forward(model, batch_dict, scaler, info_dict)
-                info_dict = batch_backward(model, scaler, info_dict)
-                info_dict = update_parameter_and_lr(model, optimizer, scheduler, scaler, info_dict)
-                optimizer_d.zero_grad()
+            batch_dict['turn'] = 'generator'
+            info_dict = batch_forward(model, batch_dict, scaler, info_dict)
+            info_dict = batch_backward(model, scaler, info_dict)
+            info_dict = update_parameter_and_lr(model, optimizer, scheduler, scaler, info_dict)
+            optimizer_d.zero_grad()
 
-                log_per_step(writer, info_dict)
-                pbar.set_description(f"[TRAIN] epoch={self.epoch}/{total_epochs}| step={self.step}| batch={batch_idx+1}/{total_batches}| loss={info_dict.get('loss'):.4f}| loss_gen={info_dict.get('loss_gen'):.4f}| loss_fm={info_dict.get('loss_fm'):.4f}| loss_mel={info_dict.get('loss_mel'):.4f}| loss_tpr={info_dict.get('loss_tpr'):.4f}| loss_f0={info_dict.get('loss_f0'):.4f}|  lr={info_dict.get('lr')}| grad_norm={info_dict.get('grad_norm')}")
+            log_per_step(writer, info_dict)
+            loss_dict = info_dict['loss_dict']
+            pbar.set_description(f"[TRAIN] epoch={self.epoch}/{total_epochs}| step={self.step}| batch={batch_idx+1}/{total_batches}| loss={loss_dict.get('loss'):.4f}| loss_gen={loss_dict.get('loss_gen'):.4f}| loss_fm={loss_dict.get('loss_fm'):.4f}| loss_mel={loss_dict.get('loss_mel'):.4f}| loss_tpr={loss_dict.get('loss_tpr'):.4f}| loss_f0={loss_dict.get('loss_f0'):.4f}|  lr={loss_dict.get('lr')}| grad_norm={loss_dict.get('grad_norm')}")
 
-                if info_dict['save_per_step'] > 0 and (self.step + 1) % info_dict['save_per_step'] == 0 and \
-                   (batch_idx + 1) % info_dict["accum_grad"] == 0:
-                    self.cv(model, cv_data_loader, writer, info_dict, on_batch_end=False)
-                    model.train()
+            if info_dict['save_per_step'] > 0 and (self.step + 1) % info_dict['save_per_step'] == 0 and \
+                (batch_idx + 1) % info_dict["accum_grad"] == 0:
+                self.cv(model, cv_data_loader, writer, info_dict, on_batch_end=False)
+                model.train()
 
-                if (batch_idx + 1) % info_dict["accum_grad"] == 0:
-                    self.step += 1
+            if (batch_idx + 1) % info_dict["accum_grad"] == 0:
+                self.step += 1
 
-            except Exception as e:
-                logging.error(e)
 
         self.cv(model, cv_data_loader, writer, info_dict, on_batch_end=True)
 

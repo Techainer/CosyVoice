@@ -1,7 +1,7 @@
 . ./path.sh || exit 1;
 
-stage=5
-stop_stage=5
+stage=6
+stop_stage=6
 
 raw_data_dir=/home/andrew/data/tts
 output_raw_data_dir=data_vivoice
@@ -62,7 +62,7 @@ dist_backend="nccl"
 num_workers=1
 prefetch=100
 train_engine=torch_ddp
-exp_name=ft_data_vivoice_CosyVoice2-0.5B_lr1e-5_maxframe5k
+exp_name=CosyVoice2-0.5B_ft_all_data_lower_lr1e-5_warmup1k_maxframe10k_chunk_size_50_num_decoding_left_chunks_0
 
 if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
   echo "Run train. We only support llm traning for now. If your want to train from scratch, please use conf/cosyvoice.fromscratch.yaml"
@@ -92,14 +92,14 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
 fi
 
 # average model
-average_num=5
+average_num=3
 if [ ${stage} -le 6 ] && [ ${stop_stage} -ge 6 ]; then
   for model in llm flow hifigan; do
-    decode_checkpoint=`pwd`/exp/cosyvoice/$model/$train_engine/${model}.pt
+    decode_checkpoint=`pwd`/exp/$exp_name/$model/${model}_avg_${average_num}.pt
     echo "do model average and final checkpoint is $decode_checkpoint"
     python cosyvoice/bin/average_model.py \
       --dst_model $decode_checkpoint \
-      --src_path `pwd`/exp/cosyvoice/$model/$train_engine  \
+      --src_path `pwd`/exp/$exp_name/$model  \
       --num ${average_num} \
       --val_best
   done

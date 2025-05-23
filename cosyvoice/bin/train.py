@@ -124,11 +124,18 @@ def main():
     # load checkpoint
     model = configs[args.model]
     start_step, start_epoch = 0, -1
-    if args.checkpoint is not None:
-        logging.info('loading checkpoint {}'.format(args.checkpoint))
-        if os.path.exists(args.checkpoint):
-            state_dict = torch.load(args.checkpoint, weights_only=True, map_location='cpu')
-            model.load_state_dict(state_dict, strict=True)
+    checkpoint = args.checkpoint
+    if checkpoint is not None:
+        if gan:
+            checkpoint = checkpoint.replace("hifigan.pt", "hift.pt")
+        if os.path.exists(checkpoint):
+            logging.info('loading checkpoint {}'.format(checkpoint))
+            state_dict = torch.load(checkpoint, weights_only=True, map_location='cpu')
+            if gan:
+                logging.info("loading GAN generator checkpoint")
+                model.generator.load_state_dict(state_dict, strict=True)
+            else:
+                model.load_state_dict(state_dict, strict=True)
             if 'step' in state_dict:
                 start_step = state_dict['step']
                 logging.info('start step {}'.format(start_step))
@@ -136,7 +143,7 @@ def main():
                 start_epoch = state_dict['epoch']
                 logging.info('start epoch {}'.format(start_epoch))
         else:
-            logging.warning('checkpoint {} do not exsist!'.format(args.checkpoint))
+            logging.warning('checkpoint {} do not exsist!'.format(checkpoint))
 
     # Dispatch model from cpu to gpu
     model = wrap_cuda_model(args, model)
@@ -151,7 +158,7 @@ def main():
     info_dict = deepcopy(configs['train_conf'])
     info_dict['step'] = start_step
     info_dict['epoch'] = start_epoch
-    save_model(model, 'init', info_dict)
+    # save_model(model, 'init', info_dict)
 
     # Get executor
     executor = Executor(gan=gan)

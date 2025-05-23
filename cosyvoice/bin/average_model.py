@@ -61,8 +61,7 @@ def main():
         sorted_val_scores = sorted(val_scores,
                                    key=lambda x: x[2],
                                    reverse=False)
-        print("best val (epoch, step, loss, tag) = " +
-              str(sorted_val_scores[:args.num]))
+        print("best val (epoch, step, loss, tag) = " + str(sorted_val_scores[:args.num]))
         path_list = [
             args.src_path + '/epoch_{}_whole.pt'.format(score[0])
             for score in sorted_val_scores[:args.num]
@@ -73,7 +72,7 @@ def main():
     assert num == len(path_list)
     for path in path_list:
         print('Processing {}'.format(path))
-        states = torch.load(path, map_location=torch.device('cpu'))
+        states = torch.load(path, weights_only=True, map_location=torch.device('cpu'))
         for k in states.keys():
             if k not in ['step', 'epoch']:
                 if k not in avg.keys():

@@ -23,12 +23,13 @@ import time
 import torch
 
 
-def job(utt_list, parquet_file, utt2parquet_file, spk2parquet_file):
+def job(i, utt_list, parquet_file, utt2parquet_file, spk2parquet_file):
+    logging.info(f"processing part {i}")
     start_time = time.time()
-    data_list = []
-    for utt in tqdm(utt_list):
-        data = open(utt2wav[utt], 'rb').read()
-        data_list.append(data)
+    # data_list = []
+    # for utt in tqdm(utt_list):
+    #     data = open(utt2wav[utt], 'rb').read()
+    #     data_list.append(data)
     wav_list = [utt2wav[utt] for utt in utt_list]
     text_list = [utt2text[utt] for utt in utt_list]
     spk_list = [utt2spk[utt] for utt in utt_list]
@@ -40,7 +41,7 @@ def job(utt_list, parquet_file, utt2parquet_file, spk2parquet_file):
     df = pd.DataFrame()
     df['utt'] = utt_list
     df['wav'] = wav_list
-    df['audio_data'] = data_list
+    # df['audio_data'] = data_list
     df['text'] = text_list
     df['spk'] = spk_list
     df['utt_embedding'] = uttembedding_list
@@ -83,9 +84,9 @@ if __name__ == "__main__":
         for l in f:
             l = l.replace('\n', '').split()
             utt2spk[l[0]] = l[1]
-    utt2embedding = torch.load('{}/utt2embedding.pt'.format(args.src_dir))
-    spk2embedding = torch.load('{}/spk2embedding.pt'.format(args.src_dir))
-    utt2speech_token = torch.load('{}/utt2speech_token.pt'.format(args.src_dir))
+    utt2embedding = torch.load('{}/utt2embedding.pt'.format(args.src_dir), weights_only=True)
+    spk2embedding = torch.load('{}/spk2embedding.pt'.format(args.src_dir), weights_only=True)
+    utt2speech_token = torch.load('{}/utt2speech_token.pt'.format(args.src_dir), weights_only=True)
     utts = list(utt2wav.keys())
 
     print(f"total utt2wav {len(utt2wav)}")
@@ -105,7 +106,7 @@ if __name__ == "__main__":
         parquet_list.append(parquet_file)
         utt2parquet_list.append(utt2parquet_file)
         spk2parquet_list.append(spk2parquet_file)
-        pool.apply_async(job, (utts[j: j + args.num_utts_per_parquet], parquet_file, utt2parquet_file, spk2parquet_file))
+        pool.apply_async(job, (i, utts[j: j + args.num_utts_per_parquet], parquet_file, utt2parquet_file, spk2parquet_file))
     pool.close()
     pool.join()
 

@@ -57,15 +57,18 @@ def main():
     train_filelist = []
     valid_filelist = []
     
+    total_duration = 0
+
     for file in files:
-        # if 'vivoice' not in str(file):
-        #     continue
         # if 'data_bac_nam' not in str(file):
         #     continue
-        spk = os.path.dirname(file).split("/")[-1]
+
+        not_exist_count = 0
+        subset_filelist = []
+
         if file.name == "metadata_lower.txt":
             logger.info(f'Loading {file}')
-            subset_filelist = []
+            spk = os.path.dirname(file).split("/")[-1]
             with open(file, "r", encoding="utf-8") as f:
                 not_exist_count = 0
                 lines = f.readlines()
@@ -107,14 +110,62 @@ def main():
                     text = " ".join(text.split()).lower()
                     line = f"{filepath}|{spk}|{text}"
                     subset_filelist.append(line)
+                    total_duration += y.shape[0]/ sr
 
-            if not_exist_count > 0:
-                logger.info(f"Not valid count: {not_exist_count}/{len(lines)}")  
+        elif file.name == "transcripts_lower.txt" and "vivos" not in str(file):
+            logger.info(f'Loading {file}')
+            spk = os.path.dirname(file).split("/")[4]
+            with open(file, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+                for line in tqdm(lines):
+                    line = line.strip().split("|")
+                    filepath = line[0]
+                    # filepath = filepath.replace('/home/andrew/data/tts', '/data/tts')
+                    if not os.path.exists(filepath):
+                        print(f"File {filepath} not exist")
+                        not_exist_count += 1
+                        continue
+                    try:
+                        y, sr = soundfile.read(filepath)
+                    except:
+                        print(f"File {filepath} cannot be read")
+                        not_exist_count += 1
+                        continue
+                    if len(y.shape) != 1:
+                        print(f"File {filepath} is not mono")
+                        not_exist_count += 1
+                        continue
+                    if y.shape[0]/ sr > 20:
+                        print(f"File {filepath} is too long")
+                        not_exist_count += 1
+                        continue
+                    if y.shape[0]/ sr < 1:
+                        print(f"File {filepath} is too short")
+                        not_exist_count += 1
+                        continue
+                    if 'vivos' in str(file):
+                        line[1] = line[1].lower().strip()
+                    text = line[1]
+                    if not text.endswith(".") and not text.endswith("?") and not text.endswith("!"):
+                        text += "."
+                    text = text.replace(" .", ".").replace(" ,", ",")
+                    text = " ".join(text.split()).lower()
+                    line = f"{filepath}|{spk}|{text}"
+                    subset_filelist.append(line)
+                    total_duration += y.shape[0]/ sr
 
-            # Split the current subset into train and valid sets
-            train_subset, valid_subset = train_test_split(subset_filelist, test_size=args.valid_size, random_state=42)
-            train_filelist.extend(train_subset)
-            valid_filelist.extend(valid_subset)
+        else:
+            continue
+
+        if not_exist_count > 0:
+            logger.info(f"Not valid count: {not_exist_count}/{len(lines)}")  
+
+        # Split the current subset into train and valid sets
+        train_subset, valid_subset = train_test_split(subset_filelist, test_size=args.valid_size, random_state=42)
+        train_filelist.extend(train_subset)
+        valid_filelist.extend(valid_subset)
+    
+    logger.info(f"Total duration: {total_duration/3600:.2f} hours")
 
     # Save the training and validation file lists
     with open(os.path.join(args.output_dir, "train_filelist.txt"), "w", encoding="utf-8") as f:

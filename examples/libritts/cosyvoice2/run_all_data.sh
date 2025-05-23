@@ -3,7 +3,7 @@
 stage=5
 stop_stage=5
 
-raw_data_dir=/home/andrew/data/tts
+raw_data_dir=/home/andrew/data
 output_raw_data_dir=data
 pretrained_model_dir=../../../pretrained_models/CosyVoice2-0.5B
 
@@ -20,7 +20,7 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
 fi
 
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
-  for x in valid; do
+  for x in train valid; do
     echo "Extract discrete speech token, you will get utt2speech_token.pt in $output_raw_data_dir/$x dir"
     python tools/extract_speech_token.py --dir $output_raw_data_dir/$x --onnx_path $pretrained_model_dir/speech_tokenizer_v2.onnx
   done
@@ -62,15 +62,16 @@ dist_backend="nccl"
 num_workers=1
 prefetch=100
 train_engine=torch_ddp
-exp_name=CosyVoice2-0.5B_ft_all_data_lower_lr1e-5_warmup500_maxframe10k_num_decoding_left_chunks_1
+exp_name=CosyVoice2-0.5B_ft_all_data_tts_asr_lower_lr1e-5_warmup1k_maxframe5k
 
 if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
   echo "Run train. We only support llm traning for now. If your want to train from scratch, please use conf/cosyvoice.fromscratch.yaml"
   if [ $train_engine == 'deepspeed' ]; then
     echo "Notice deepspeed has its own optimizer config. Modify conf/ds_stage2.json if necessary"
   fi
-  # for model in hifigan; do
-  for model in flow; do
+  # for model in llm; do
+  # for model in flow; do
+  for model in hifigan; do
     echo "======================"
     echo "START TRAINING: $model"
     echo "======================"
@@ -92,14 +93,14 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
 fi
 
 # average model
-average_num=5
+average_num=3
 if [ ${stage} -le 6 ] && [ ${stop_stage} -ge 6 ]; then
   for model in llm flow hifigan; do
-    decode_checkpoint=`pwd`/exp/cosyvoice/$model/$train_engine/${model}.pt
+    decode_checkpoint=`pwd`/exp/$exp_name/$model/${model}_avg_${average_num}.pt
     echo "do model average and final checkpoint is $decode_checkpoint"
     python cosyvoice/bin/average_model.py \
       --dst_model $decode_checkpoint \
-      --src_path `pwd`/exp/cosyvoice/$model/$train_engine  \
+      --src_path `pwd`/exp/$exp_name/$model  \
       --num ${average_num} \
       --val_best
   done

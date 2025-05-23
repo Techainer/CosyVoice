@@ -23,7 +23,7 @@ print(cosyvoice.save_spkinfo())
 # fine grained control, for supported control, check cosyvoice/tokenizer/tokenizer.py#L248
 # for i, j in enumerate(cosyvoice.inference_cross_lingual('bistream usage, you can use generator as input, this is useful when using text llm model as input', prompt_speech_16k, stream=False)):
 for i, j in enumerate(cosyvoice.inference_cross_lingual('dự kiến tăng mức phụ cấp [laughter] ưu đãi nghề cho giáo viên mầm non từ bốn mươi lăm phần trăm đến tám mươi phần trăm [laughter].', prompt_speech_16k, stream=False)):
-    torchaudio.save('inference_cross_lingual_8epoch.wav', j['tts_speech'], cosyvoice.sample_rate)
+    torchaudio.save('inference_cross_lingual_9epoch.wav', j['tts_speech'], cosyvoice.sample_rate)
 
 # instruct usage
 # for i, j in enumerate(cosyvoice.inference_instruct2('Dự kiến tăng mức phụ cấp ưu đãi nghề cho giáo viên mầm non từ 45% đến 80%', 'female voice', prompt_speech_16k, stream=False)):
